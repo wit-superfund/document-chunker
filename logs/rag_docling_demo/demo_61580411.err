@@ -1,0 +1,26 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/815 [00:00<?, ?it/s]Loading weights:   6%|▌         | 47/815 [00:00<00:02, 306.74it/s]Loading weights:  10%|▉         | 79/815 [00:00<00:02, 305.42it/s]Loading weights:  17%|█▋        | 135/815 [00:00<00:01, 403.40it/s]Loading weights:  26%|██▌       | 212/815 [00:00<00:01, 529.46it/s]Loading weights:  34%|███▍      | 280/815 [00:00<00:00, 578.63it/s]Loading weights:  44%|████▎     | 356/815 [00:00<00:00, 623.15it/s]Loading weights:  59%|█████▉    | 480/815 [00:00<00:00, 810.83it/s]Loading weights:  75%|███████▌  | 614/815 [00:00<00:00, 959.02it/s]Loading weights:  92%|█████████▏| 749/815 [00:00<00:00, 1076.22it/s]Loading weights: 100%|██████████| 815/815 [00:01<00:00, 793.08it/s] 
+[32m[INFO] 2026-07-09 13:02:08,962 [RapidOCR] base.py:23: Using engine_name: torch[0m
+[32m[INFO] 2026-07-09 13:02:09,140 [RapidOCR] device_config.py:57: Using CPU device[0m
+[32m[INFO] 2026-07-09 13:02:09,155 [RapidOCR] download_file.py:68: Initiating download: https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.9.1/torch/PP-OCRv4/det/ch_PP-OCRv4_det_mobile.pth[0m
+[32m[INFO] 2026-07-09 13:02:10,480 [RapidOCR] download_file.py:82: Download size: 13.83MB[0m
+[32m[INFO] 2026-07-09 13:02:10,949 [RapidOCR] download_file.py:95: Successfully saved to: /home/desrochest_wit_edu/Documents/superfund-docling/.venv/lib/python3.14/site-packages/rapidocr/models/ch_PP-OCRv4_det_mobile.pth[0m
+[32m[INFO] 2026-07-09 13:02:10,952 [RapidOCR] main.py:50: Using /home/desrochest_wit_edu/Documents/superfund-docling/.venv/lib/python3.14/site-packages/rapidocr/models/ch_PP-OCRv4_det_mobile.pth[0m
+[32m[INFO] 2026-07-09 13:02:12,153 [RapidOCR] base.py:23: Using engine_name: torch[0m
+[32m[INFO] 2026-07-09 13:02:12,154 [RapidOCR] device_config.py:57: Using CPU device[0m
+[32m[INFO] 2026-07-09 13:02:12,156 [RapidOCR] download_file.py:68: Initiating download: https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.9.1/torch/PP-OCRv4/cls/ch_ptocr_mobile_v2.0_cls_mobile.pth[0m
+[32m[INFO] 2026-07-09 13:02:12,720 [RapidOCR] download_file.py:82: Download size: 0.56MB[0m
+[32m[INFO] 2026-07-09 13:02:12,772 [RapidOCR] download_file.py:95: Successfully saved to: /home/desrochest_wit_edu/Documents/superfund-docling/.venv/lib/python3.14/site-packages/rapidocr/models/ch_ptocr_mobile_v2.0_cls_mobile.pth[0m
+[32m[INFO] 2026-07-09 13:02:12,775 [RapidOCR] main.py:50: Using /home/desrochest_wit_edu/Documents/superfund-docling/.venv/lib/python3.14/site-packages/rapidocr/models/ch_ptocr_mobile_v2.0_cls_mobile.pth[0m
+[32m[INFO] 2026-07-09 13:02:12,937 [RapidOCR] base.py:23: Using engine_name: torch[0m
+[32m[INFO] 2026-07-09 13:02:12,938 [RapidOCR] device_config.py:57: Using CPU device[0m
+[32m[INFO] 2026-07-09 13:02:12,939 [RapidOCR] download_file.py:68: Initiating download: https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.9.1/torch/PP-OCRv4/rec/ch_PP-OCRv4_rec_mobile.pth[0m
+[32m[INFO] 2026-07-09 13:02:15,540 [RapidOCR] download_file.py:82: Download size: 25.67MB[0m
+[32m[INFO] 2026-07-09 13:02:16,344 [RapidOCR] download_file.py:95: Successfully saved to: /home/desrochest_wit_edu/Documents/superfund-docling/.venv/lib/python3.14/site-packages/rapidocr/models/ch_PP-OCRv4_rec_mobile.pth[0m
+[32m[INFO] 2026-07-09 13:02:16,346 [RapidOCR] main.py:50: Using /home/desrochest_wit_edu/Documents/superfund-docling/.venv/lib/python3.14/site-packages/rapidocr/models/ch_PP-OCRv4_rec_mobile.pth[0m
+[32m[INFO] 2026-07-09 13:02:16,655 [RapidOCR] download_file.py:68: Initiating download: https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.9.1/paddle/PP-OCRv4/rec/ch_PP-OCRv4_rec_mobile/ppocr_keys_v1.txt[0m
+[32m[INFO] 2026-07-09 13:02:17,149 [RapidOCR] download_file.py:82: Download size: 0.03MB[0m
+[32m[INFO] 2026-07-09 13:02:17,477 [RapidOCR] download_file.py:95: Successfully saved to: /home/desrochest_wit_edu/Documents/superfund-docling/.venv/lib/python3.14/site-packages/rapidocr/models/ppocr_keys_v1.txt[0m
+Loading weights:   0%|          | 0/770 [00:00<?, ?it/s]Loading weights:  11%|█▏        | 87/770 [00:00<00:00, 737.88it/s]Loading weights:  22%|██▏       | 172/770 [00:00<00:00, 759.01it/s]Loading weights:  32%|███▏      | 248/770 [00:00<00:00, 535.09it/s]Loading weights:  47%|████▋     | 361/770 [00:00<00:00, 710.03it/s]Loading weights:  63%|██████▎   | 485/770 [00:00<00:00, 865.99it/s]Loading weights:  87%|████████▋ | 670/770 [00:00<00:00, 1159.78it/s]Loading weights: 100%|██████████| 770/770 [00:00<00:00, 993.73it/s] 
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer TokenizersBackend. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (3182 > 512). Running this sequence through the model will result in indexing errors
