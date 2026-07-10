@@ -1,4 +1,3 @@
-from transformers.models.auto.tokenization_auto import SentencePieceBackend
 from docling.document_converter import PdfFormatOption
 from docling.document_converter import DocumentConverter
 from docling.chunking import HybridChunker
@@ -12,10 +11,13 @@ from docling.datamodel.accelerator_options import AcceleratorDevice, Accelerator
 from rich.console import Console
 
 
-def __init__(max_tokens: int = 512):
+def init_docling(max_tokens: int = 512):
 
     pipeline_options = PdfPipelineOptions()
-    pipeline_options.do_picture_description = True
+    pipeline_options = PdfPipelineOptions()
+    pipeline_options.do_ocr = False 
+    pipeline_options.do_picture_description = False  
+    pipeline_options.do_table_structure = False     
     pipeline_options.picture_description_options = smolvlm_picture_description
     pipeline_options.picture_description_options.generation_config["repetition_penalty"] = 1.2
 
@@ -56,53 +58,6 @@ def chunk_document(file_path: Path, converter, chunker, console: Console = Conso
     chunks = list(chunk_iter)
 
     return chunks
-
-
-def analyze_chunks(chunks, tokenizer):
-    """Analyze chunks and return embeddings"""
-    print("\n" + "=" * 60)
-    print("CHUNK ANALYSIS")
-    print("=" * 60)
-
-    total_tokens = 0
-    chunk_sizes = []
-
-    for i, chunk in enumerate(chunks):
-        # Get text content
-        text = chunk.text
-        tokens = tokenizer.encode(text)
-        token_count = len(tokens)
-
-        total_tokens += token_count
-        chunk_sizes.append(token_count)
-
-        # Display first 3 chunks in detail
-        if i < 3:
-            print(f"\n--- Chunk {i} ---")
-            print(f"Tokens: {token_count}")
-            print(f"Characters: {len(text)}")
-            print(f"Preview: {text[:150]}...")
-
-            # Show metadata if available
-            if hasattr(chunk, 'meta') and chunk.meta:
-                print(f"Metadata: {chunk.meta}")
-
-    # Summary statistics
-    print("\n" + "=" * 60)
-    print("SUMMARY STATISTICS")
-    print("=" * 60)
-    print(f"Total chunks: {len(chunks)}")
-    print(f"Total tokens: {total_tokens}")
-    print(f"Average tokens per chunk: {total_tokens / len(chunks):.1f}")
-    print(f"Min tokens: {min(chunk_sizes)}")
-    print(f"Max tokens: {max(chunk_sizes)}")
-
-    # Token distribution
-    print(f"\nToken distribution:")
-    ranges = [(0, 128), (128, 256), (256, 384), (384, 512)]
-    for start, end in ranges:
-        count = sum(1 for size in chunk_sizes if start <= size < end)
-        print(f"  {start}-{end} tokens: {count} chunks")
 
 
 def save_chunks(chunks, chunker, output_path: Path, console: Console = Console()):
