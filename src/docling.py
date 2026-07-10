@@ -11,13 +11,15 @@ from docling.datamodel.accelerator_options import AcceleratorDevice, Accelerator
 from rich.console import Console
 
 
-def init_docling(max_tokens: int = 512):
+def init_docling(max_tokens: int = 512, pictures: bool = True):
 
     pipeline_options = PdfPipelineOptions()
-    pipeline_options = PdfPipelineOptions()
-    pipeline_options.do_ocr = False 
-    pipeline_options.do_picture_description = False  
-    pipeline_options.do_table_structure = False     
+    pipeline_options.do_ocr = False
+    if not pictures:
+        pipeline_options.do_picture_description = False  
+        pipeline_options.do_table_structure = False     
+    else:
+        pipeline_options.do_picture_description = True
     pipeline_options.picture_description_options = smolvlm_picture_description
     pipeline_options.picture_description_options.generation_config["repetition_penalty"] = 1.2
 
