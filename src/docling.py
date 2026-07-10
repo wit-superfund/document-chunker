@@ -1,3 +1,4 @@
+from transformers.models.auto.tokenization_auto import SentencePieceBackend
 from docling.document_converter import PdfFormatOption
 from docling.document_converter import DocumentConverter
 from docling.chunking import HybridChunker
@@ -10,8 +11,9 @@ from docling.datamodel.base_models import InputFormat
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from rich.console import Console
 
-def chunk_document(file_path: Path, max_tokens: int = 512, console: Console = Console()):
-    """Convert a document into chunks for embedder to read"""
+
+def __init__(max_tokens: int = 512):
+
     pipeline_options = PdfPipelineOptions()
     pipeline_options.do_picture_description = True
     pipeline_options.picture_description_options = smolvlm_picture_description
@@ -21,30 +23,39 @@ def chunk_document(file_path: Path, max_tokens: int = 512, console: Console = Co
     accelerator_options = AcceleratorOptions(device=AcceleratorDevice.AUTO)
     pipeline_options.accelerator_options = accelerator_options
 
-    console.print(f'Processing: {file_path.name}\n', justify='center', style='bold underline magenta')
-
-    console.print("Converting Document...\n", style="bold blue", justify='center')
     converter = DocumentConverter(
         format_options={
             InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
         }
     )
 
-    result = converter.convert(file_path)
-    doc = result.document
-
-    console.print("Initializing Tokenizer...\n", style="bold blue", justify='center')
     model_id = "sentence-transformers/all-MiniLM-L6-v2"
     tokenizer = AutoTokenizer.from_pretrained(model_id, model_max_length=8192)
 
     chunker = HybridChunker(tokenizer=tokenizer,
                             max_tokens=max_tokens, merge_peers=True)
 
-    console.print("Generating Chunks...\n", style="bold blue", justify='center')
+    return converter, chunker, tokenizer
+
+
+def chunk_document(file_path: Path, converter, chunker, console: Console = Console()):
+    """Convert a document into chunks for embedder to read"""
+
+    console.print(f'Processing: {file_path.name}',
+                  justify='center', style='bold magenta')
+
+    console.print("\n\nConverting Document...\n",
+                  style="bold blue", justify='center')
+
+    result = converter.convert(file_path)
+    doc = result.document
+
+    console.print("Generating Chunks...\n",
+                  style="bold blue", justify='center')
     chunk_iter = chunker.chunk(dl_doc=doc)
     chunks = list(chunk_iter)
 
-    return chunks, tokenizer, chunker
+    return chunks
 
 
 def analyze_chunks(chunks, tokenizer):
@@ -102,5 +113,5 @@ def save_chunks(chunks, chunker, output_path: Path, console: Console = Console()
             contextualized_text = chunker.serialize(chunk=chunk)
             f.write(contextualized_text)
             f.write("\n\n")
-    console.print(f'Chunks saved to: {output_path}', style='bold green')
+    console.print(f'\n\nChunks saved to: {output_path}', style='bold green', justify='center')
     return None

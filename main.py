@@ -1,5 +1,6 @@
+import os
 from pathlib import Path
-from src.docling import chunk_document, save_chunks, analyze_chunks
+from src.docling import chunk_document, save_chunks, analyze_chunks, __init__
 from src.init import initialize
 from dotenv import load_dotenv
 from timeit import timeit
@@ -8,15 +9,17 @@ load_dotenv()
 
 def main():
     # Load document
-    in_dir = Path("./data/10691613.pdf")
-    out_dir = Path("./data/10691613_chunks.md")
-    chunks, tokenizer, chunker = chunk_document(
-        in_dir, console=console)
+    in_dir = Path(os.getenv("INPUT_DIR", "./data"))
+    
+    converter, chunker, tokenizer = __init__()
+    
+    for path in in_dir.glob("*.pdf"):
+        out_dir = Path(f"./data/{path.name.split('.')[0]}.md")
+        chunks = chunk_document(
+            path, converter, chunker, console=console)
 
-    # analyze_chunks(chunks, tokenizer)
-
-    # Save chunks
-    save_chunks(chunks, chunker, out_dir, console=console)
+        # Save chunks
+        save_chunks(chunks, chunker, out_dir, console=console)
 
 
 if __name__ == "__main__":
