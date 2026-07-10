@@ -24,3 +24,6 @@ data/*
 
 # Environment Variables
 *.env
+
+# Themes
+themes/*
