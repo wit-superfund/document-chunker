@@ -10,7 +10,9 @@ load_dotenv()
 
 def main(console):
     in_dir = Path(os.getenv("INPUT_DIR", "./data"))
-    
+    os.mkdir("./data/without_picture_descr")
+    os.mkdir("./data/with_picture_descr")
+
     # 1. Pictures OFF
     console.print("\n[bold yellow]--- Running with Pictures OFF ---[/bold yellow]", justify='center')
     start_off = time.perf_counter()
