@@ -7,7 +7,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-
 def main(console):
     # Load document
     in_dir = Path(os.getenv("INPUT_DIR", "./data"))

@@ -12,8 +12,6 @@ from rich.console import Console
 
 
 def init_docling(max_tokens: int = 512):
-
-    pipeline_options = PdfPipelineOptions()
     pipeline_options = PdfPipelineOptions()
     pipeline_options.do_ocr = False 
     pipeline_options.do_picture_description = False  
