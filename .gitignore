@@ -27,3 +27,7 @@ data/*
 
 # Themes
 themes/*
+scripts/compare_evaluations.py
+
+# Logs
+logs/*

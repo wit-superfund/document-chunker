@@ -1,48 +1,62 @@
-import sys
-import json
-import time
-import difflib
+import torch
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from src.docling import init_docling
+import json
+import time
+import re
 import gc
-import torch
-
+from collections import Counter
 
 def extract_text_from_json(data):
-    """Recursively extract all text values from a JSON structure."""
-    if isinstance(data, str):
-        return [data]
-    elif isinstance(data, list):
-        texts = []
-        for item in data:
-            texts.extend(extract_text_from_json(item))
-        return texts
-    elif isinstance(data, dict):
-        if "text" in data and isinstance(data["text"], str):
-            return [data["text"]]
-        texts = []
-        for val in data.values():
-            texts.extend(extract_text_from_json(val))
-        return texts
+    """Extract only document text content from DoclingDocument JSON."""
+    if isinstance(data, dict) and "texts" in data:
+        return [item["text"] for item in data["texts"] if "text" in item]
+    # fallback for other JSON structures
+    if isinstance(data, list):
+        return [item["text"] for item in data if isinstance(item, dict) and "text" in item]
     return []
 
 
-def compute_metrics(gt_text, md_text):
-    """Calculate SequenceMatcher similarity and word-level overlap F1 score."""
-    ratio = difflib.SequenceMatcher(None, gt_text, md_text).ratio()
-    gt_words = set(gt_text.lower().split())
-    md_words = set(md_text.lower().split())
 
-    intersection = gt_words.intersection(md_words)
-    precision = len(intersection) / len(md_words) if md_words else 0
-    recall = len(intersection) / len(gt_words) if gt_words else 0
+def clean_text(text: str) -> str:
+    """Strip markdown formatting and normalize text for accurate comparison."""
+    # Remove markdown links [text](url) -> text
+    text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', text)
+    # Remove headers, bold, italics, code backticks, table dividers
+    text = re.sub(r'[#*_`|~]', ' ', text)
+    # Replace multiple whitespaces/newlines with a single space
+    text = re.sub(r'\s+', ' ', text)
+    return text.strip().lower()
+
+
+def compute_metrics(gt_text, md_text):
+    """Calculate normalized word-level overlap and metrics using Counter."""
+    gt_clean = clean_text(gt_text)
+    md_clean = clean_text(md_text)
+
+    gt_words = re.findall(r'\w+', gt_clean)
+    md_words = re.findall(r'\w+', md_clean)
+
+    gt_counter = Counter(gt_words)
+    md_counter = Counter(md_words)
+
+    # Multi-set intersection (accounts for word frequency)
+    intersection_counter = gt_counter & md_counter
+    intersection_count = sum(intersection_counter.values())
+
+    precision = intersection_count / len(md_words) if md_words else 0
+    recall = intersection_count / len(gt_words) if gt_words else 0
     f1 = 2 * precision * recall / \
         (precision + recall) if (precision + recall) else 0
 
+    # Fast Jaccard similarity ratio on word multisets
+    union_count = sum((gt_counter | md_counter).values())
+    similarity_ratio = intersection_count / union_count if union_count else 0
+
     return {
-        "similarity_ratio": ratio,
+        "similarity_ratio": similarity_ratio,
         "precision": precision,
         "recall": recall,
         "f1": f1
@@ -94,7 +108,7 @@ def main():
 
     # Print comparative report
     print("\n" + "="*50)
-    print("=== PICTUES ON vs. PICTURES OFF COMPARISON ===")
+    print("=== PICTURES ON vs. PICTURES OFF COMPARISON ===")
     print("="*50)
     print(f"PDF Document: {pdf_path.name}")
     print(f"Ground Truth: {gt_path.name}")
