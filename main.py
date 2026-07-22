@@ -9,9 +9,11 @@ load_dotenv()
 
 
 def main(console):
-    in_dir = Path(os.getenv("INPUT_DIR", "./data"))
-    os.mkdir("./data/without_picture_descr")
-    os.mkdir("./data/with_picture_descr")
+    in_dir = Path(os.getenv("INPUT_DIR", "./data/"))
+    with_dir = Path("./data/with_picture_descr")
+    without_dir =  Path("./data/without_picture_descr")
+    without_dir.mkdir(parents=True, exist_ok=True)
+    with_dir.mkdir(parents=True, exist_ok=True)
 
     # 1. Pictures OFF
     console.print(
@@ -19,8 +21,7 @@ def main(console):
     start_off = time.perf_counter()
     converter, chunker, tokenizer = init_docling(pictures=False)
     for path in in_dir.glob("*.pdf"):
-        out_dir = Path(
-            f"./data/without_picture_descr/{path.name.split('.')[0]}_off.md")
+        out_dir = without_dir / f"{path.name.split('.')[0]}_off.md"
         chunks = chunk_document(path, converter, chunker, console=console)
         save_chunks(chunks, chunker, out_dir, console=console)
     elapsed_off = time.perf_counter() - start_off
@@ -31,8 +32,7 @@ def main(console):
     start_on = time.perf_counter()
     converter, chunker, tokenizer = init_docling(pictures=True)
     for path in in_dir.glob("*.pdf"):
-        out_dir = Path(
-            f"./data/with_picture_descr/{path.name.split('.')[0]}_on.md")
+        out_dir = with_dir / f"{path.name.split('.')[0]}_on.md"
         chunks = chunk_document(path, converter, chunker, console=console)
         save_chunks(chunks, chunker, out_dir, console=console)
     elapsed_on = time.perf_counter() - start_on
