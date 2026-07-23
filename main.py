@@ -1,7 +1,7 @@
 import os
 import time
 from pathlib import Path
-from src.docling import chunk_document, save_chunks, init_docling
+from src.docling_tools import chunk_document, save_chunks, init_docling
 from src.init import initialize
 from dotenv import load_dotenv
 

@@ -1,5 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from src.docling import init_docling, chunk_document, save_chunks
+from docling_tools import init_docling, chunk_document, save_chunks
 import time
 from pathlib import Path
 import pandas as pd

@@ -2,7 +2,7 @@ import torch
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
-from src.docling import init_docling
+from src.docling_tools import init_docling
 import json
 import time
 import re
@@ -86,7 +86,7 @@ def main():
 
     # 1. Evaluate with Pictures OFF
     print("Converting with Pictures OFF...")
-    conv_off, _, _ = init_docling(pictures=False)
+    conv_off, _ = init_docling(pictures=False)
     start_off = time.perf_counter()
     res_off = conv_off.convert(pdf_path)
     md_off = res_off.document.export_to_markdown()
@@ -99,7 +99,7 @@ def main():
 
     # 2. Evaluate with Pictures ON
     print("Converting with Pictures ON...")
-    conv_on, _, _ = init_docling(pictures=True)
+    conv_on, _ = init_docling(pictures=True)
     start_on = time.perf_counter()
     res_on = conv_on.convert(pdf_path)
     md_on = res_on.document.export_to_markdown()
