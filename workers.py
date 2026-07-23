@@ -1,4 +1,3 @@
-from transformers.models import dit
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from src.docling import init_docling, chunk_document, save_chunks
 import time
@@ -17,6 +16,10 @@ OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 load_dotenv()
+
+# TODO: Move initialization to before workers get deployed, ensure files cannot be accessed by multiple workers.
+# Create .slurm file.
+# Scale up # of files.
 
 
 def worker(document: Path, pictures_on: bool = False, ocr_on: bool = False):
@@ -55,7 +58,8 @@ def worker(document: Path, pictures_on: bool = False, ocr_on: bool = False):
 
 def run_converters(in_dir: Path):
     future_res = []
-    with ThreadPoolExecutor(max_workers=3) as executor:
+
+    with ThreadPoolExecutor(max_workers=4) as executor:
         futures = {
             executor.submit(worker, path, pictures_on=True, ocr_on=False)
             for path in in_dir.rglob("*.pdf")
@@ -70,10 +74,6 @@ def run_converters(in_dir: Path):
 if __name__ == "__main__":
     results = run_converters(IN_DIR)
 
-    # results = worker(IN_DIR / "10691613.pdf")
-
     df = pd.DataFrame(results)
 
     print(df)
-
-
