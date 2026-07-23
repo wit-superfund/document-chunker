@@ -19,7 +19,7 @@ def main(console):
     console.print(
         "\n[bold yellow]--- Running with Pictures OFF ---[/bold yellow]", justify='center')
     start_off = time.perf_counter()
-    converter, chunker, tokenizer = init_docling(pictures=False)
+    converter, chunker = init_docling(pictures=False)
     for path in in_dir.glob("*.pdf"):
         out_dir = without_dir / f"{path.name.split('.')[0]}_off.md"
         chunks = chunk_document(path, converter, chunker, console=console)
@@ -30,7 +30,7 @@ def main(console):
     console.print(
         "\n[bold yellow]--- Running with Pictures ON ---[/bold yellow]", justify='center')
     start_on = time.perf_counter()
-    converter, chunker, tokenizer = init_docling(pictures=True)
+    converter, chunker = init_docling(pictures=True)
     for path in in_dir.glob("*.pdf"):
         out_dir = with_dir / f"{path.name.split('.')[0]}_on.md"
         chunks = chunk_document(path, converter, chunker, console=console)

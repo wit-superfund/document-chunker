@@ -1,3 +1,4 @@
+from docling_core.transforms.chunker import BaseChunk
 from docling.document_converter import PdfFormatOption
 from docling.document_converter import DocumentConverter
 from docling.chunking import HybridChunker
@@ -9,15 +10,28 @@ from docling.datamodel.pipeline_options import (
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from rich.console import Console
+import pymupdf
 
 
-def init_docling(max_tokens: int = 512, pictures: bool = True):
+
+
+
+def pdf_needs_ocr(pdf_path: Path, min_words: int = 10) -> bool:
+    """Return True if the PDF lacks an embedded text layer."""
+    doc = pymupdf.open(pdf_path)
+    text = "".join(str(page.get_text("text"))
+                   for page in doc[:3])  # sample first 3 pages
+    doc.close()
+    return len(text.split()) < min_words
+
+
+def init_docling(max_tokens: int = 512, pictures: bool = True, ocr: bool = False):
 
     pipeline_options = PdfPipelineOptions()
-    pipeline_options.do_ocr = False
+    pipeline_options.do_ocr = ocr
     if not pictures:
-        pipeline_options.do_picture_description = False  
-        pipeline_options.do_table_structure = False     
+        pipeline_options.do_picture_description = False
+        pipeline_options.do_table_structure = False
     else:
         pipeline_options.do_picture_description = True
     pipeline_options.picture_description_options = smolvlm_picture_description
@@ -39,36 +53,34 @@ def init_docling(max_tokens: int = 512, pictures: bool = True):
     chunker = HybridChunker(tokenizer=tokenizer,
                             max_tokens=max_tokens, merge_peers=True)
 
-    return converter, chunker, tokenizer
+    return converter, chunker
 
-
-def chunk_document(file_path: Path, converter, chunker, console: Console = Console()):
+def chunk_document(file_path: Path, converter: DocumentConverter, chunker: HybridChunker, console: Console = Console()):
     """Convert a document into chunks for embedder to read"""
 
     console.print(f'Processing: {file_path.name}',
-                  justify='center', style='bold magenta')
+                  justify='center')
 
-    console.print("\n\nConverting Document...\n",
-                  style="bold blue", justify='center')
+    console.print("\n\nConverting Document...\n", justify='center')
 
     result = converter.convert(file_path)
     doc = result.document
 
-    console.print("Generating Chunks...\n",
-                  style="bold blue", justify='center')
+    console.print("Generating Chunks...\n",justify='center')
     chunk_iter = chunker.chunk(dl_doc=doc)
     chunks = list(chunk_iter)
 
     return chunks
 
 
-def save_chunks(chunks, chunker, output_path: Path, console: Console = Console()):
+def save_chunks(chunks: list[BaseChunk], chunker: HybridChunker, output_path: Path, console: Console = Console()):
     """Save chunks to a file"""
     with open(output_path, "w", encoding="utf-8") as f:
         for i, chunk in enumerate(chunks):
             f.write(f"## Chunk {i+1}\n\n")
-            contextualized_text = chunker.serialize(chunk=chunk)
+            contextualized_text = chunker.contextualize(chunk=chunk)
             f.write(contextualized_text)
             f.write("\n\n")
-    console.print(f'\n\nChunks saved to: {output_path}', style='bold green', justify='center')
+    console.print(
+        f'\n\nChunks saved to: {output_path}', justify='center')
     return None
