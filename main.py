@@ -1,53 +1,29 @@
 import os
-import time
 from pathlib import Path
-from src.docling_tools import chunk_document, save_chunks, init_docling
-from src.init import initialize
+
+import pandas as pd
 from dotenv import load_dotenv
+from rich.console import Console
+
+from src.workers import run_converters
 
 load_dotenv()
 
+IN_DIR = Path(os.getenv("INPUT_DIR", "./data"))
+OUT_DIR = Path(os.getenv("OUTPUT_DIR", "./data"))
+IN_DIR.mkdir(parents=True, exist_ok=True)
+OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-def main(console):
-    in_dir = Path(os.getenv("INPUT_DIR", "./data/"))
-    with_dir = Path("./data/with_picture_descr")
-    without_dir =  Path("./data/without_picture_descr")
-    without_dir.mkdir(parents=True, exist_ok=True)
-    with_dir.mkdir(parents=True, exist_ok=True)
 
-    # 1. Pictures OFF
-    console.print(
-        "\n[bold yellow]--- Running with Pictures OFF ---[/bold yellow]", justify='center')
-    start_off = time.perf_counter()
-    converter, chunker = init_docling(pictures=False)
-    for path in in_dir.glob("*.pdf"):
-        out_dir = without_dir / f"{path.name.split('.')[0]}_off.md"
-        chunks = chunk_document(path, converter, chunker, console=console)
-        save_chunks(chunks, chunker, out_dir, console=console)
-    elapsed_off = time.perf_counter() - start_off
+def main():
+    results = run_converters(IN_DIR)
 
-    # 2. Pictures ON
-    console.print(
-        "\n[bold yellow]--- Running with Pictures ON ---[/bold yellow]", justify='center')
-    start_on = time.perf_counter()
-    converter, chunker = init_docling(pictures=True)
-    for path in in_dir.glob("*.pdf"):
-        out_dir = with_dir / f"{path.name.split('.')[0]}_on.md"
-        chunks = chunk_document(path, converter, chunker, console=console)
-        save_chunks(chunks, chunker, out_dir, console=console)
-    elapsed_on = time.perf_counter() - start_on
+    df = pd.DataFrame(results)
 
-    # Results Summary
-    console.print(
-        "\n[bold green]=== Performance Comparison ===[/bold green]", justify='center')
-    console.print(
-        f"Pictures OFF: [bold cyan]{elapsed_off:.2f} seconds[/bold cyan]", justify='center')
-    console.print(
-        f"Pictures ON : [bold cyan]{elapsed_on:.2f} seconds[/bold cyan]", justify='center')
-    console.print(
-        f"Difference  : [bold red]{elapsed_on - elapsed_off:+.2f} seconds[/bold red]", justify='center')
+    df.to_csv(OUT_DIR / "results" / "results.csv")
+
+    Console().print(df, justify="center")
 
 
 if __name__ == "__main__":
-    console = initialize()
-    main(console)
+    main()

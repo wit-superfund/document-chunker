@@ -16,6 +16,68 @@ from rich.console import Console
 from transformers import AutoTokenizer
 
 
+class DocChunker:
+    model_id = "sentence-transformers/all-MiniLM-L6-v2"
+    console = Console()
+
+    def __init__(
+        self, max_tokens: int = 512, ocr: bool = False, pictures: bool = False
+    ) -> None:
+        self.pipeline_options = PdfPipelineOptions()
+        self.pipeline_options.do_ocr = ocr
+        if not pictures:
+            self.pipeline_options.do_picture_description = False
+            self.pipeline_options.do_table_structure = False
+        else:
+            self.pipeline_options.do_picture_description = True
+            self.pipeline_options.picture_description_options = (
+                smolvlm_picture_description
+            )
+            self.pipeline_options.picture_description_options.generation_config[
+                "repetition_penalty"
+            ] = 1.2
+
+        self.accelerator_options = AcceleratorOptions(device=AcceleratorDevice.AUTO)
+        self.pipeline_options.accelerator_options = self.accelerator_options
+
+        self.converter = DocumentConverter(
+            format_options={
+                InputFormat.PDF: PdfFormatOption(pipeline_options=self.pipeline_options)
+            }
+        )
+
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            self.model_id, model_max_length=8192
+        )
+
+        self.chunker = HybridChunker(
+            tokenizer=self.tokenizer, max_tokens=max_tokens, merge_peers=True
+        )
+
+    def chunk_document(self, file_path: Path) -> list[BaseChunk]:
+        self.console.print(f"Processing: {file_path.name}", justify="center")
+
+        self.console.print("\n\nConverting Document...\n", justify="center")
+
+        result: ConversionResult = self.converter.convert(file_path)
+        doc = result.document
+
+        chunk_iter: Iterator[BaseChunk] = self.chunker.chunk(dl_doc=doc)
+        chunks: list[BaseChunk] = list(chunk_iter)
+
+        return chunks
+
+    def save_chunks(self, output_path: Path, chunks):
+        self.console.print(f"Saving chunks to: {output_path}", justify="center")
+        with open(output_path, "w", encoding="utf-8") as f:
+            for i, chunk in enumerate(chunks):
+                f.write(f"## Chunk{i + 1} \n\n")
+                contextualized_text: str = self.chunker.contextualize(chunk=chunk)
+                f.write(contextualized_text)
+                f.write("\n\n")
+        self.console.print(f"Chunks saved to: {output_path}", justify="center")
+
+
 def pdf_needs_ocr(pdf_path: Path, min_words: int = 10) -> bool:
     """Return True if the PDF lacks an embedded text layer."""
     doc = pymupdf.open(pdf_path)
@@ -24,77 +86,3 @@ def pdf_needs_ocr(pdf_path: Path, min_words: int = 10) -> bool:
     )  # sample first 3 pages
     doc.close()
     return len(text.split()) < min_words
-
-
-def init_docling(
-    max_tokens: int = 512, pictures: bool = True, ocr: bool = False
-) -> tuple[DocumentConverter, HybridChunker]:
-
-    pipeline_options = PdfPipelineOptions()
-    pipeline_options.do_ocr = ocr
-    if not pictures:
-        pipeline_options.do_picture_description = False
-        pipeline_options.do_table_structure = False
-    else:
-        pipeline_options.do_picture_description = True
-    pipeline_options.picture_description_options = smolvlm_picture_description
-    pipeline_options.picture_description_options.generation_config[
-        "repetition_penalty"
-    ] = 1.2
-
-    # GPU accelerator
-    accelerator_options = AcceleratorOptions(device=AcceleratorDevice.AUTO)
-    pipeline_options.accelerator_options = accelerator_options
-
-    converter = DocumentConverter(
-        format_options={
-            InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
-        }
-    )
-
-    model_id = "sentence-transformers/all-MiniLM-L6-v2"
-    tokenizer = AutoTokenizer.from_pretrained(model_id, model_max_length=8192)
-
-    chunker = HybridChunker(
-        tokenizer=tokenizer, max_tokens=max_tokens, merge_peers=True
-    )
-
-    return converter, chunker
-
-
-def chunk_document(
-    file_path: Path,
-    converter: DocumentConverter,
-    chunker: HybridChunker,
-    console: Console = Console(),
-) -> list[BaseChunk]:
-    """Convert a document into chunks for embedder to read"""
-
-    console.print(f"Processing: {file_path.name}", justify="center")
-
-    console.print("\n\nConverting Document...\n", justify="center")
-
-    result: ConversionResult = converter.convert(file_path)
-    doc = result.document
-
-    console.print("Generating Chunks...\n", justify="center")
-    chunk_iter: Iterator[BaseChunk] = chunker.chunk(dl_doc=doc)
-    chunks: list[BaseChunk] = list(chunk_iter)
-
-    return chunks
-
-
-def save_chunks(
-    chunks: list[BaseChunk],
-    chunker: HybridChunker,
-    output_path: Path,
-    console: Console = Console(),
-) -> None:
-    """Save chunks to a file"""
-    with open(output_path, "w", encoding="utf-8") as f:
-        for i, chunk in enumerate(chunks):
-            f.write(f"## Chunk {i + 1}\n\n")
-            contextualized_text = chunker.contextualize(chunk=chunk)
-            f.write(contextualized_text)
-            f.write("\n\n")
-    console.print(f"\n\nChunks saved to: {output_path}", justify="center")

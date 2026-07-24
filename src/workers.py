@@ -1,5 +1,4 @@
 import os
-import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -8,10 +7,8 @@ import pandas as pd
 from docling_core.transforms.chunker import BaseChunk
 from dotenv import load_dotenv
 
-from docling_tools import chunk_document, init_docling, save_chunks
+from src.docling_tools import DocChunker
 
-FILE_LOCK = threading.Lock()
-SOURCE_LOCK = threading.Lock()
 IN_DIR = Path(os.getenv("INPUT_DIR", "./data"))
 OUT_DIR = Path(os.getenv("OUTPUT_DIR", "./data"))
 IN_DIR.mkdir(parents=True, exist_ok=True)
@@ -20,64 +17,58 @@ OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 load_dotenv()
 
-# TODO: Move initialization to before workers get deployed, ensure files cannot be accessed by multiple workers.
-# Create .slurm file.
-# Scale up # of files.
-
 
 def worker(
-    document: Path, pictures_on: bool = False, ocr_on: bool = False
+    doc_chunker: DocChunker,
+    document: Path,
 ) -> dict[str, Path | float]:
-    # Initialize docling based on inputs
-    # Convert and export to .md
-    # Repeat for rest of the directory
-    out_path: Path = OUT_DIR / f"{document.name.split('.')[0]}.md"
+    out_path: Path = OUT_DIR / document.relative_to(IN_DIR).with_suffix(".md")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
 
     start_timer = time.perf_counter()
 
-    conv, chunker = init_docling(pictures=pictures_on, ocr=ocr_on)
-
-    init_end: float = time.perf_counter()
-
-    chunks: list[BaseChunk] = chunk_document(document, conv, chunker)
+    chunks: list[BaseChunk] = doc_chunker.chunk_document(document)
 
     chunker_end = time.perf_counter()
 
-    save_chunks(chunks, chunker, out_path)
+    doc_chunker.save_chunks(out_path, chunks)
 
     elapsed = time.perf_counter()
     elapsed_document = elapsed - start_timer
-    elapsed_init = init_end - start_timer
-    elapsed_convert = chunker_end - init_end
+    elapsed_convert = chunker_end - start_timer
     elapsed_save = elapsed - chunker_end
 
     return {
         "path": document,
         "output": out_path,
         "total_time": elapsed_document,
-        "init_time": elapsed_init,
         "convert_time": elapsed_convert,
         "save_time": elapsed_save,
     }
 
 
-def run_converters(in_dir: Path):
+def run_converters(
+    in_dir: Path, do_ocr: bool = False, do_pictures: bool = False
+) -> list[dict[str, Path | float]]:
     future_res: list[dict[str, Path | float]] = []
+    n_workers = 4
+    chunkers = [DocChunker(pictures=do_pictures, ocr=do_ocr) for _ in range(n_workers)]
+    files = list(in_dir.rglob("*.pdf"))
 
-    with ThreadPoolExecutor(max_workers=4) as executor:
+    with ThreadPoolExecutor(max_workers=n_workers) as executor:
         futures = {
-            executor.submit(worker, path, pictures_on=True, ocr_on=False)
-            for path in in_dir.rglob("*.pdf")
+            executor.submit(worker, chunkers[i % n_workers], f)
+            for i, f in enumerate(files)
         }
-    for future in as_completed(futures):
-        result: dict[str, Path | float] = future.result()
-        future_res.append(result)
+        for future in as_completed(futures):
+            result: dict[str, Path | float] = future.result()
+            future_res.append(result)
 
     return future_res
 
 
 if __name__ == "__main__":
-    results = run_converters(IN_DIR)
+    results: list[dict[str, Path | float]] = run_converters(IN_DIR)
 
     df = pd.DataFrame(results)
 
