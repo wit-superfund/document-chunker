@@ -11,16 +11,18 @@ load_dotenv()
 
 IN_DIR = Path(os.getenv("INPUT_DIR", "./data"))
 OUT_DIR = Path(os.getenv("OUTPUT_DIR", "./data"))
+CSV_DIR: Path = OUT_DIR / "results"
 IN_DIR.mkdir(parents=True, exist_ok=True)
 OUT_DIR.mkdir(parents=True, exist_ok=True)
+CSV_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def main():
-    results = run_converters(IN_DIR)
+    results: list[dict[str, Path | float]] = run_converters(IN_DIR)
 
     df = pd.DataFrame(results)
 
-    df.to_csv(OUT_DIR / "results" / "results.csv")
+    df.to_csv(CSV_DIR / "results.csv")
 
     Console().print(df, justify="center")
 
