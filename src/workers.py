@@ -9,13 +9,12 @@ from dotenv import load_dotenv
 
 from src.docling_tools import DocChunker
 
+load_dotenv()
+
 IN_DIR = Path(os.getenv("INPUT_DIR", "./data"))
 OUT_DIR = Path(os.getenv("OUTPUT_DIR", "./data"))
 IN_DIR.mkdir(parents=True, exist_ok=True)
 OUT_DIR.mkdir(parents=True, exist_ok=True)
-
-
-load_dotenv()
 
 
 def worker(
@@ -52,7 +51,8 @@ def run_converters(
 ) -> list[dict[str, Path | float]]:
     future_res: list[dict[str, Path | float]] = []
     n_workers = 4
-    chunkers = [DocChunker(pictures=do_pictures, ocr=do_ocr) for _ in range(n_workers)]
+    chunkers = [DocChunker(pictures=do_pictures, ocr=do_ocr)
+                for _ in range(n_workers)]
     files = list(in_dir.rglob("*.pdf"))
 
     with ThreadPoolExecutor(max_workers=n_workers) as executor:
