@@ -1,11 +1,14 @@
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from docling_tools import init_docling, chunk_document, save_chunks
-import time
-from pathlib import Path
-import pandas as pd
-from dotenv import load_dotenv
 import os
 import threading
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
+
+import pandas as pd
+from docling_core.transforms.chunker import BaseChunk
+from dotenv import load_dotenv
+
+from docling_tools import chunk_document, init_docling, save_chunks
 
 FILE_LOCK = threading.Lock()
 SOURCE_LOCK = threading.Lock()
@@ -22,19 +25,21 @@ load_dotenv()
 # Scale up # of files.
 
 
-def worker(document: Path, pictures_on: bool = False, ocr_on: bool = False):
+def worker(
+    document: Path, pictures_on: bool = False, ocr_on: bool = False
+) -> dict[str, Path | float]:
     # Initialize docling based on inputs
     # Convert and export to .md
     # Repeat for rest of the directory
-    out_path = OUT_DIR / f"{document.name.split('.')[0]}.md"
+    out_path: Path = OUT_DIR / f"{document.name.split('.')[0]}.md"
 
     start_timer = time.perf_counter()
 
     conv, chunker = init_docling(pictures=pictures_on, ocr=ocr_on)
 
-    init_end = time.perf_counter()
+    init_end: float = time.perf_counter()
 
-    chunks = chunk_document(document, conv, chunker)
+    chunks: list[BaseChunk] = chunk_document(document, conv, chunker)
 
     chunker_end = time.perf_counter()
 
@@ -57,7 +62,7 @@ def worker(document: Path, pictures_on: bool = False, ocr_on: bool = False):
 
 
 def run_converters(in_dir: Path):
-    future_res = []
+    future_res: list[dict[str, Path | float]] = []
 
     with ThreadPoolExecutor(max_workers=4) as executor:
         futures = {
@@ -65,7 +70,7 @@ def run_converters(in_dir: Path):
             for path in in_dir.rglob("*.pdf")
         }
     for future in as_completed(futures):
-        result = future.result()
+        result: dict[str, Path | float] = future.result()
         future_res.append(result)
 
     return future_res
