@@ -1,31 +1,38 @@
 import os
-import time
 from pathlib import Path
-from src.docling import chunk_document, save_chunks, init_docling
-from src.init import initialize
+
+import pandas as pd
 from dotenv import load_dotenv
+from rich.console import Console
+
+from src.workers import run_converters
+import time
 
 load_dotenv()
 
-def main(console):
-    # Load document
-    in_dir = Path(os.getenv("INPUT_DIR", "./data"))
-    
-    converter, chunker, tokenizer = init_docling()
-    
-    for path in in_dir.glob("*.pdf"):
-        out_dir = Path(f"./data/{path.name.split('.')[0]}.md")
-        chunks = chunk_document(
-            path, converter, chunker, console=console)
+IN_DIR = Path(os.getenv("INPUT_DIR", "./data"))
+OUT_DIR = Path(os.getenv("OUTPUT_DIR", "./data"))
+CSV_DIR: Path = OUT_DIR / "results"
+IN_DIR.mkdir(parents=True, exist_ok=True)
+OUT_DIR.mkdir(parents=True, exist_ok=True)
+CSV_DIR.mkdir(parents=True, exist_ok=True)
 
-        # Save chunks
-        save_chunks(chunks, chunker, out_dir, console=console)
+
+def main():
+    start_timer = time.perf_counter()
+    results: list[dict[str, Path | float]] = run_converters(IN_DIR)
+
+    elapsed_time = (time.perf_counter() - start_timer) / 60
+
+    df = pd.DataFrame(results)
+
+    df.to_csv(CSV_DIR / "results.csv")
+
+    Console().print(df, justify="center")
+
+    Console().print(
+        f"=== Elapsed time: {elapsed_time:.2f} minutes", justify="center")
 
 
 if __name__ == "__main__":
-    console = initialize()
-    start_time = time.perf_counter()
-    main(console)
-    elapsed = time.perf_counter() - start_time
-    console.print(f'[bold red]Document chunked in {elapsed:.2f} seconds[/bold red]', justify='center')
-
+    main()
