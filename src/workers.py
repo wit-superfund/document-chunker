@@ -26,23 +26,15 @@ def worker(
 
     start_timer = time.perf_counter()
 
-    chunks: list[BaseChunk] = doc_chunker.chunk_document(document)
-
-    chunker_end = time.perf_counter()
-
-    doc_chunker.save_chunks(out_path, chunks)
+    doc_chunker.save_chunks_streaming(out_path, document)
 
     elapsed = time.perf_counter()
     elapsed_document = elapsed - start_timer
-    elapsed_convert = chunker_end - start_timer
-    elapsed_save = elapsed - chunker_end
 
     return {
         "path": document,
         "output": out_path,
         "total_time": elapsed_document,
-        "convert_time": elapsed_convert,
-        "save_time": elapsed_save,
     }
 
 
@@ -50,7 +42,7 @@ def run_converters(
     in_dir: Path, do_ocr: bool = False, do_pictures: bool = False
 ) -> list[dict[str, Path | float]]:
     future_res: list[dict[str, Path | float]] = []
-    n_workers = 4
+    n_workers = 16
     chunkers = [DocChunker(pictures=do_pictures, ocr=do_ocr)
                 for _ in range(n_workers)]
     files = list(in_dir.rglob("*.pdf"))

@@ -3,7 +3,7 @@
 #SBATCH --partition=gpu-preempt
 #SBATCH --gres=gpu:1
 #SBATCH --constraint="a100|l40s"
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=16
 #SBATCH --mem=64G
 #SBATCH --time=4:00:00
 #SBATCH --output=logs/rag_docling_demo/demo_%j.out
