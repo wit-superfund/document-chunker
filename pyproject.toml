@@ -1,7 +1,7 @@
 [project]
-name = "superfund-chunker"
+name = "document-chunker"
 version = "0.1.0"
-description = "Add your description here"
+description = "Converts .pdf to chunks in .md using Docling"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
