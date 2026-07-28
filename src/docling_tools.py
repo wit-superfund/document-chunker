@@ -23,9 +23,11 @@ class DocChunker:
     def __init__(
         self, max_tokens: int = 512, ocr: bool = False, pictures: bool = False
     ) -> None:
+
+        # Pipeline configuration, decides if the program needs to use vlm for reading pictures, or if it enables ocr, both options increase runtime
         self.pipeline_options = PdfPipelineOptions()
         self.pipeline_options.do_ocr = ocr
-        self.pipeline_options.do_table_structure = False
+        self.pipeline_options.do_table_structure = True
         if not pictures:
             self.pipeline_options.do_picture_description = False
         else:
@@ -33,6 +35,7 @@ class DocChunker:
             self.pipeline_options.picture_description_options = (
                 smolvlm_picture_description
             )
+            # Stops the model from spiraling in a loop trying to describe an image
             self.pipeline_options.picture_description_options.generation_config[
                 "repetition_penalty"
             ] = 1.2
@@ -40,6 +43,8 @@ class DocChunker:
         self.accelerator_options = AcceleratorOptions(device=AcceleratorDevice.AUTO)
         self.pipeline_options.accelerator_options = self.accelerator_options
 
+        
+        # Initialize: converter, tokenizer, and chunker
         self.converter = DocumentConverter(
             format_options={
                 InputFormat.PDF: PdfFormatOption(pipeline_options=self.pipeline_options)
@@ -54,36 +59,12 @@ class DocChunker:
             tokenizer=self.tokenizer, max_tokens=max_tokens, merge_peers=True
         )
 
-    PAGE_BATCH_SIZE = 100  # pages per conversion batch for large docs
-
-    def _iter_chunks_fast(self, file_path: Path) -> Generator[str, None, None]:
-        """Fast path: extract text via pymupdf and chunk by token count. No ML models."""
-        doc = pymupdf.open(file_path)
-        buf: list[str] = []
-        buf_tokens = 0
-        for page in doc:
-            raw_text = page.get_text("text")
-            text = (raw_text if isinstance(raw_text, str) else " ".join(map(str, raw_text)) if isinstance(raw_text, list) else raw_text.get("text", "") if isinstance(raw_text, dict) else str(raw_text)).strip()
-            if not text:
-                continue
-            tokens = len(self.tokenizer.encode(text, add_special_tokens=False)) if self.tokenizer else len(text.split())
-            if buf_tokens + tokens > self.chunker.max_tokens and buf:
-                yield " ".join(buf)
-                buf, buf_tokens = [text], tokens
-            else:
-                buf.append(text)
-                buf_tokens += tokens
-        if buf:
-            yield " ".join(buf)
-        doc.close()
+    PAGE_BATCH_SIZE = 50  # pages per conversion batch for large docs
 
     def _iter_chunks(self, file_path: Path) -> Generator[BaseChunk, None, None]:
         """Yield chunks: fast pymupdf path for text-layer PDFs, Docling for OCR."""
-        if not pdf_needs_ocr(file_path):
-            self.console.print(f"  [fast] text-layer PDF: {file_path.name}", justify="center")
-            yield from self._iter_chunks_fast(file_path)  # type: ignore[misc]
-            return
         total_pages = pymupdf.open(file_path).page_count
+        # Loop through given pages and convert text found
         for start in range(0, total_pages, self.PAGE_BATCH_SIZE):
             end = min(start + self.PAGE_BATCH_SIZE - 1, total_pages - 1)
             self.console.print(
@@ -96,6 +77,7 @@ class DocChunker:
             yield from self.chunker.chunk(dl_doc=result.document)
 
     def chunk_document(self, file_path: Path) -> list[BaseChunk]:
+        """ Method to run _iter_chunks"""
         self.console.print(f"Processing: {file_path.name}", justify="center")
         self.console.print("\n\nConverting Document...\n", justify="center")
         return list(self._iter_chunks(file_path))
@@ -112,6 +94,7 @@ class DocChunker:
         return i + 1
 
     def save_chunks(self, output_path: Path, chunks):
+        """ Write chunks to .md file """
         self.console.print(f"Saving chunks to: {output_path}", justify="center")
         with open(output_path, "w", encoding="utf-8") as f:
             for i, chunk in enumerate(chunks):
@@ -120,13 +103,3 @@ class DocChunker:
                 f.write(contextualized_text)
                 f.write("\n\n")
         self.console.print(f"Chunks saved to: {output_path}", justify="center")
-
-
-def pdf_needs_ocr(pdf_path: Path, min_words: int = 10) -> bool:
-    """Return True if the PDF lacks an embedded text layer."""
-    doc = pymupdf.open(pdf_path)
-    text = "".join(
-        str(page.get_text("text")) for page in doc[:3]
-    )  # sample first 3 pages
-    doc.close()
-    return len(text.split()) < min_words
